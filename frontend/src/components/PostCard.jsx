@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Clock, Send, X } from 'lucide-react';
+import { Heart, MessageCircle, Clock, Send, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getUserFromStorage } from '../utils/auth';
 
-const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActions = true, currentUserId }) => {
+const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActions = true }) => {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const user = getUserFromStorage();
+
+  // Reset media index when post changes
+  useEffect(() => {
+    setCurrentMediaIndex(0);
+  }, [post._id]);
 
   const formatDate = (date) => {
     const now = new Date();
@@ -48,8 +54,47 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
   };
 
   const isLiked = post.isLiked || false;
-  const likesCount = (post.likes && Array.isArray(post.likes)) ? post.likes.length : 0;
+  const likesCount = post.totalLikes || (post.likes && Array.isArray(post.likes) ? post.likes.length : 0);
+  const likedUsers = post.likedUsers || [];
   const comments = (post.comments && Array.isArray(post.comments)) ? post.comments : [];
+  const currentUserId = user?._id;
+  
+  // Determine display text for likes
+  const getLikesDisplayText = () => {
+    if (likesCount === 0) return null;
+    if (likesCount === 1) {
+      if (isLiked) return 'You';
+      return likedUsers[0]?.name || 'Someone';
+    }
+    
+    // Special case: if like count is exactly 4
+    if (likesCount === 4) {
+      if (isLiked) {
+        return 'You and 3 others';
+      } else {
+        // Show the most recently liked user (first in array since we reverse it in backend)
+        const recentUser = likedUsers[0]?.name || 'Someone';
+        return `${recentUser} and 3 others`;
+      }
+    }
+    
+    // For other counts, show format: "You and X others" or "Name and X others"
+    if (isLiked) {
+      const otherCount = likesCount - 1;
+      if (otherCount === 0) {
+        return 'You';
+      }
+      return `You and ${otherCount} other${otherCount > 1 ? 's' : ''}`;
+    } else {
+      // Show most recently liked user
+      const recentUser = likedUsers[0]?.name || 'Someone';
+      const otherCount = likesCount - 1;
+      if (otherCount === 0) {
+        return recentUser;
+      }
+      return `${recentUser} and ${otherCount} other${otherCount > 1 ? 's' : ''}`;
+    }
+  };
 
   return (
     <motion.div
@@ -107,25 +152,203 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
 
       <p className="text-gray-700 mb-4 leading-relaxed">{post.content}</p>
 
-      {post.image && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mb-4 rounded-xl overflow-hidden"
-        >
-          <img
-            src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${post.image}`}
-            alt="Post"
-            className="w-full h-auto object-cover max-h-96 rounded-xl"
-            onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/600x400?text=Image+Not+Found';
-            }}
-          />
-        </motion.div>
-      )}
+      {/* Display multiple media files with new layout */}
+      {(post.media && post.media.length > 0) || post.image ? (
+        <div className="mb-4">
+          {post.media && post.media.length > 0 ? (
+            post.media.length > 3 ? (
+              // Carousel layout for more than 3 images with navigation arrows
+              <div className="relative">
+                <motion.div
+                  key={currentMediaIndex}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="rounded-xl overflow-hidden"
+                >
+                  {post.media[currentMediaIndex].type === 'video' ? (
+                    <video
+                      src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${post.media[currentMediaIndex].path}`}
+                      controls
+                      className="w-full h-auto object-cover max-h-96 rounded-xl"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${post.media[currentMediaIndex].path}`}
+                      alt={`Post media ${currentMediaIndex + 1}`}
+                      className="w-full h-auto object-cover max-h-96 rounded-xl"
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/600x400?text=Image+Not+Found';
+                      }}
+                    />
+                  )}
+                </motion.div>
+                
+                {/* Left Arrow */}
+                {currentMediaIndex > 0 && (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setCurrentMediaIndex(currentMediaIndex - 1)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full flex items-center justify-center text-white transition-all duration-300 z-10"
+                  >
+                    <ChevronLeft size={24} />
+                  </motion.button>
+                )}
+                
+                {/* Right Arrow */}
+                {currentMediaIndex < post.media.length - 1 && (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setCurrentMediaIndex(currentMediaIndex + 1)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full flex items-center justify-center text-white transition-all duration-300 z-10"
+                  >
+                    <ChevronRight size={24} />
+                  </motion.button>
+                )}
+                
+                {/* Image counter indicator */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black bg-opacity-50 rounded-full px-3 py-1 text-white text-sm font-medium z-10">
+                  {currentMediaIndex + 1} / {post.media.length}
+                </div>
+                
+                {/* Thumbnail grid below main image */}
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {post.media.slice(0, 4).map((mediaItem, index) => (
+                    <motion.button
+                      key={index}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setCurrentMediaIndex(index)}
+                      className={`relative rounded-xl overflow-hidden ${
+                        currentMediaIndex === index ? 'ring-2 ring-blue-500' : ''
+                      }`}
+                    >
+                      {mediaItem.type === 'video' ? (
+                        <video
+                          src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${mediaItem.path}`}
+                          className="w-full h-20 object-cover rounded-xl"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <img
+                          src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${mediaItem.path}`}
+                          alt={`Thumbnail ${index + 1}`}
+                          className="w-full h-20 object-cover rounded-xl"
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/600x400?text=Image+Not+Found';
+                          }}
+                        />
+                      )}
+                      {index === 3 && post.media.length > 4 && (
+                        <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center rounded-xl">
+                          <span className="text-white text-xs font-bold">+{post.media.length - 4}</span>
+                        </div>
+                      )}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              // Layout for 3 or fewer images: regular grid
+              <div className={`grid gap-2 ${post.media.length === 1 ? 'grid-cols-1' : post.media.length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+                {post.media.map((mediaItem, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="rounded-xl overflow-hidden"
+                  >
+                    {mediaItem.type === 'video' ? (
+                      <video
+                        src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${mediaItem.path}`}
+                        controls
+                        className="w-full h-auto object-cover max-h-96 rounded-xl"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${mediaItem.path}`}
+                        alt={`Post media ${index + 1}`}
+                        className="w-full h-auto object-cover max-h-96 rounded-xl"
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/600x400?text=Image+Not+Found';
+                        }}
+                      />
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            )
+          ) : post.image ? (
+            // Fallback to single image for backward compatibility
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="rounded-xl overflow-hidden"
+            >
+              <img
+                src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${post.image}`}
+                alt="Post"
+                className="w-full h-auto object-cover max-h-96 rounded-xl"
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/600x400?text=Image+Not+Found';
+                }}
+              />
+            </motion.div>
+          ) : null}
+        </div>
+      ) : null}
 
       {showActions && (
         <>
+          {/* Likes Display */}
+          {likesCount > 0 && (
+            <div className="flex items-center gap-2 pt-2 pb-2">
+              <div className="flex items-center -space-x-2">
+                {likedUsers.slice(0, 3).map((likedUser, index) => (
+                  <div
+                    key={likedUser._id || index}
+                    className="w-6 h-6 rounded-full border-2 border-white overflow-hidden bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold"
+                    title={likedUser.name}
+                  >
+                    {likedUser.profilePhoto ? (
+                      <img
+                        src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${likedUser.profilePhoto}`}
+                        alt={likedUser.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-full h-full flex items-center justify-center ${likedUser.profilePhoto ? 'hidden' : ''}`}>
+                      {likedUser.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  </div>
+                ))}
+                {likedUsers.length > 3 && (
+                  <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-700">
+                    +{likedUsers.length - 3}
+                  </div>
+                )}
+              </div>
+              <span className="text-sm text-gray-700 font-medium">
+                {getLikesDisplayText()}
+              </span>
+            </div>
+          )}
+          
           <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -144,7 +367,6 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
               }`}
             >
               <Heart size={20} fill={isLiked ? 'currentColor' : 'none'} />
-              <span className="text-sm font-medium">{likesCount > 0 && likesCount}</span>
               <span className="text-sm">Like</span>
             </motion.button>
             <motion.button

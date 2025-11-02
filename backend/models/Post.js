@@ -42,6 +42,17 @@ const postSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  media: [{
+    type: {
+      type: String,
+      enum: ['image', 'video'],
+      required: true,
+    },
+    path: {
+      type: String,
+      required: true,
+    },
+  }],
   likes: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

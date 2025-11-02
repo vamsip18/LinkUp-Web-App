@@ -28,12 +28,14 @@ const FeedPage = () => {
     fetchPosts();
   }, []);
 
-  const handleCreatePost = async (content, image) => {
+  const handleCreatePost = async (content, mediaFiles) => {
     try {
       const formData = new FormData();
       formData.append('content', content);
-      if (image) {
-        formData.append('image', image);
+      if (mediaFiles && mediaFiles.length > 0) {
+        mediaFiles.forEach((file) => {
+          formData.append('media', file);
+        });
       }
 
       const token = localStorage.getItem('token');

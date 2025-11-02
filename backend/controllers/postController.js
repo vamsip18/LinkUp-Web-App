@@ -7,13 +7,24 @@ export const getAllPosts = async (req, res) => {
     const postsWithLikeStatus = await Promise.all(posts.map(async (post) => {
       const postObj = post.toObject();
       // Ensure likes array exists and check if user liked
-      if (post.likes && Array.isArray(post.likes)) {
+      if (post.likes && Array.isArray(post.likes) && post.likes.length > 0) {
         postObj.isLiked = post.likes.some(
           (likeId) => likeId.toString() === req.user._id.toString()
         );
+        // Populate user information for likes (get last 4 most recent likes)
+        const likeUserIds = post.likes.slice(-4).reverse(); // Get last 4 and reverse for most recent first
+        const likeUsers = await User.find({ _id: { $in: likeUserIds } }).select('name profilePhoto');
+        postObj.likedUsers = likeUsers.map(user => ({
+          _id: user._id.toString(),
+          name: user.name,
+          profilePhoto: user.profilePhoto,
+        }));
+        postObj.totalLikes = post.likes.length;
       } else {
         postObj.isLiked = false;
         postObj.likes = [];
+        postObj.likedUsers = [];
+        postObj.totalLikes = 0;
       }
       // Ensure comments array exists
       if (!postObj.comments) {
@@ -40,23 +51,42 @@ export const createPost = async (req, res) => {
       return res.status(400).json({ message: 'Post content is required' });
     }
 
-    // Get image path if uploaded
+    // Process multiple media files
+    const media = [];
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file) => {
+        const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+        media.push({
+          type: mediaType,
+          path: `/uploads/${file.filename}`,
+        });
+      });
+    }
+
+    // Keep backward compatibility with single image field
     let imagePath = null;
-    if (req.file) {
-      imagePath = `/uploads/${req.file.filename}`;
+    if (req.files && req.files.length > 0) {
+      // Use first image for backward compatibility
+      const firstImage = req.files.find(f => f.mimetype.startsWith('image/'));
+      if (firstImage) {
+        imagePath = `/uploads/${firstImage.filename}`;
+      }
     }
 
     const post = await Post.create({
       userId: req.user._id,
       username: req.user.name,
       content: content.trim(),
-      image: imagePath,
+      image: imagePath, // Keep for backward compatibility
+      media: media,
       likes: [],
       comments: [],
     });
 
     const postObj = post.toObject();
     postObj.isLiked = false;
+    postObj.likedUsers = [];
+    postObj.totalLikes = 0;
     res.status(201).json(postObj);
   } catch (error) {
     console.error('Create post error:', error);
@@ -85,7 +115,7 @@ export const deletePost = async (req, res) => {
 
 export const updatePost = async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content, deletedMedia, keepMedia } = req.body;
     const post = await Post.findById(req.params.id);
 
     if (!post) {
@@ -101,9 +131,84 @@ export const updatePost = async (req, res) => {
     }
 
     post.content = content.trim();
+
+    // Handle media updates
+    let media = [];
+    
+    // Parse keepMedia if it's a JSON string
+    let parsedKeepMedia = null;
+    if (keepMedia) {
+      try {
+        parsedKeepMedia = typeof keepMedia === 'string' ? JSON.parse(keepMedia) : keepMedia;
+      } catch (e) {
+        // If parsing fails, treat as if keepMedia wasn't provided
+        parsedKeepMedia = null;
+      }
+    }
+    
+    // Keep existing media if specified
+    if (parsedKeepMedia && Array.isArray(parsedKeepMedia) && parsedKeepMedia.length > 0) {
+      media = parsedKeepMedia.map(item => ({
+        type: item.type,
+        path: item.path,
+      }));
+    } else if (!parsedKeepMedia && post.media && Array.isArray(post.media)) {
+      // If keepMedia not specified, keep all existing media
+      media = [...post.media];
+    }
+
+    // Remove deleted media
+    if (deletedMedia && Array.isArray(deletedMedia)) {
+      media = media.filter(item => !deletedMedia.includes(item.path));
+    }
+
+    // Add new media files
+    if (req.files && req.files.length > 0) {
+      req.files.forEach((file) => {
+        const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+        media.push({
+          type: mediaType,
+          path: `/uploads/${file.filename}`,
+        });
+      });
+    }
+
+    post.media = media;
+
+    // Update image field for backward compatibility (use first image)
+    const firstImage = media.find(m => m.type === 'image');
+    post.image = firstImage ? firstImage.path : null;
+
     const updatedPost = await post.save();
-    res.json(updatedPost);
+    
+    // Get user profile photo for response
+    const user = await User.findById(post.userId).select('profilePhoto');
+    const postObj = updatedPost.toObject();
+    if (user) {
+      postObj.userProfilePhoto = user.profilePhoto;
+    }
+    postObj.isLiked = post.likes && post.likes.some(
+      (likeId) => likeId.toString() === req.user._id.toString()
+    );
+    
+    // Populate user information for likes
+    if (post.likes && post.likes.length > 0) {
+      const likeUserIds = post.likes.slice(-4).reverse();
+      const likeUsers = await User.find({ _id: { $in: likeUserIds } }).select('name profilePhoto');
+      postObj.likedUsers = likeUsers.map(user => ({
+        _id: user._id.toString(),
+        name: user.name,
+        profilePhoto: user.profilePhoto,
+      }));
+      postObj.totalLikes = post.likes.length;
+    } else {
+      postObj.likedUsers = [];
+      postObj.totalLikes = 0;
+    }
+
+    res.json(postObj);
   } catch (error) {
+    console.error('Update post error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -112,16 +217,27 @@ export const getUserPosts = async (req, res) => {
   try {
     const posts = await Post.find({ userId: req.user._id }).sort({ createdAt: -1 });
     const user = await User.findById(req.user._id).select('profilePhoto');
-    const postsWithLikeStatus = posts.map(post => {
+    const postsWithLikeStatus = await Promise.all(posts.map(async (post) => {
       const postObj = post.toObject();
       // Ensure likes array exists and check if user liked
-      if (post.likes && Array.isArray(post.likes)) {
+      if (post.likes && Array.isArray(post.likes) && post.likes.length > 0) {
         postObj.isLiked = post.likes.some(
           (likeId) => likeId.toString() === req.user._id.toString()
         );
+        // Populate user information for likes (get last 4 most recent likes)
+        const likeUserIds = post.likes.slice(-4).reverse(); // Get last 4 and reverse for most recent first
+        const likeUsers = await User.find({ _id: { $in: likeUserIds } }).select('name profilePhoto');
+        postObj.likedUsers = likeUsers.map(user => ({
+          _id: user._id.toString(),
+          name: user.name,
+          profilePhoto: user.profilePhoto,
+        }));
+        postObj.totalLikes = post.likes.length;
       } else {
         postObj.isLiked = false;
         postObj.likes = [];
+        postObj.likedUsers = [];
+        postObj.totalLikes = 0;
       }
       // Ensure comments array exists
       if (!postObj.comments) {
@@ -132,7 +248,7 @@ export const getUserPosts = async (req, res) => {
         postObj.userProfilePhoto = user.profilePhoto;
       }
       return postObj;
-    });
+    }));
     res.json(postsWithLikeStatus);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -176,6 +292,22 @@ export const likePost = async (req, res) => {
     postObj.isLiked = post.likes.some(
       (likeId) => likeId.toString() === userId.toString()
     );
+    
+    // Populate user information for likes
+    if (post.likes && post.likes.length > 0) {
+      const likeUserIds = post.likes.slice(-4).reverse(); // Get last 4 and reverse for most recent first
+      const likeUsers = await User.find({ _id: { $in: likeUserIds } }).select('name profilePhoto');
+      postObj.likedUsers = likeUsers.map(user => ({
+        _id: user._id.toString(),
+        name: user.name,
+        profilePhoto: user.profilePhoto,
+      }));
+      postObj.totalLikes = post.likes.length;
+    } else {
+      postObj.likedUsers = [];
+      postObj.totalLikes = 0;
+    }
+    
     res.json(postObj);
   } catch (error) {
     console.error('Like post error:', error);
@@ -218,12 +350,23 @@ export const addComment = async (req, res) => {
 
     const postObj = post.toObject();
     // Initialize likes check if likes array doesn't exist
-    if (post.likes && Array.isArray(post.likes)) {
+    if (post.likes && Array.isArray(post.likes) && post.likes.length > 0) {
       postObj.isLiked = post.likes.some(
         (likeId) => likeId.toString() === req.user._id.toString()
       );
+      // Populate user information for likes
+      const likeUserIds = post.likes.slice(-4).reverse();
+      const likeUsers = await User.find({ _id: { $in: likeUserIds } }).select('name profilePhoto');
+      postObj.likedUsers = likeUsers.map(user => ({
+        _id: user._id.toString(),
+        name: user.name,
+        profilePhoto: user.profilePhoto,
+      }));
+      postObj.totalLikes = post.likes.length;
     } else {
       postObj.isLiked = false;
+      postObj.likedUsers = [];
+      postObj.totalLikes = 0;
     }
     res.status(201).json(postObj);
   } catch (error) {
