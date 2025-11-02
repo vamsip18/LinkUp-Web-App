@@ -35,7 +35,7 @@ A full-stack social media application built with the MERN stack (MongoDB, Expres
 
 ```bash
 git clone <repository-url>
-cd "Socialmedia clone Project"
+cd "LinkUp-Web-App"
 ```
 
 ### 2. Backend Setup
