@@ -73,3 +73,15 @@ npm start
 ```
 
 The frontend will run on `http://localhost:3000`
+
+### 5. Test the Application
+
+1. Open your browser to `http://localhost:3000`
+2. You should see the Auth page
+3. Click "Sign Up" to create a new account
+4. Fill in Name, Email, and Password (min 6 characters)
+5. After signing up, you'll be redirected to the Feed page
+6. Try creating a post!
+7. Navigate to Profile to see your posts and edit/delete them
+
+**That's it! Your LinkedIn Clone should now be running! 🎉**
