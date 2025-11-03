@@ -71,7 +71,7 @@ const Navbar = () => {
               to="/feed"
               className="relative text-gray-700 hover:text-blue-600 transition-colors duration-300 font-medium"
             >
-              Feed
+              Home
               <motion.span
                 className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-600"
                 whileHover={{ width: '100%' }}
