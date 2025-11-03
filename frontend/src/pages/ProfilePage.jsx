@@ -115,8 +115,7 @@ const ProfilePage = () => {
       }
 
       const token = localStorage.getItem('token');
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const apiUrl = process.env.REACT_APP_API_URL || `${backendUrl}/api`;
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${apiUrl}/posts/${editingPost._id}`, {
         method: 'PUT',
         headers: {
@@ -227,8 +226,7 @@ const ProfilePage = () => {
       formData.append('image', file);
 
       const token = localStorage.getItem('token');
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const apiUrl = process.env.REACT_APP_API_URL || `${backendUrl}/api`;
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${apiUrl}/user/profile/photo`, {
         method: 'POST',
         headers: {
@@ -275,7 +273,7 @@ const ProfilePage = () => {
             <div className="relative">
               {user?.profilePhoto ? (
                 <img
-                  src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${user.profilePhoto}`}
+                  src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${user.profilePhoto}`}
                   alt={user.name}
                   className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
                   onError={(e) => {

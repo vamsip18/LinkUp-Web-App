@@ -1,8 +1,6 @@
 import axios from 'axios';
 
-// Prefer REACT_APP_API_URL; fallback to composing from REACT_APP_BACKEND_URL; final fallback to localhost
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-const API_URL = process.env.REACT_APP_API_URL || `${BACKEND_URL}/api`;
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
