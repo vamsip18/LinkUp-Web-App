@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Menu, X, User, LogOut } from 'lucide-react';
+import { Menu, X, LogOut } from 'lucide-react';
 import { clearAuth, isAuthenticated, getUserFromStorage } from '../utils/auth';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,8 +21,7 @@ const Navbar = () => {
       }
     };
     checkAuth();
-    
-    // Listen for storage changes (for logout from other tabs)
+
     const handleStorageChange = () => checkAuth();
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
@@ -31,6 +32,17 @@ const Navbar = () => {
     setUser(null);
     navigate('/auth');
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (!isAuthenticated()) {
     return null;
@@ -44,13 +56,13 @@ const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to="/feed" className="flex items-center">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent"
-            >
-              LinkUp
-            </motion.div>
+          {/* Left-aligned Logo */}
+          <Link
+            to="/feed"
+            className="flex items-center text-2xl font-bold bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent"
+            style={{ paddingLeft: '10px', marginLeft: '5px' }}
+          >
+            LinkUp
           </Link>
 
           {/* Desktop Menu */}
@@ -66,40 +78,57 @@ const Navbar = () => {
                 transition={{ duration: 0.3 }}
               />
             </Link>
+
             {user && (
-              <>
-                <Link to="/profile">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold cursor-pointer shadow-md hover:shadow-lg transition-shadow"
-                  >
-                    {user.profilePhoto ? (
-                        <img
-                          src={`${user.profilePhoto}`}
-                        alt={user.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <span className={user.profilePhoto ? 'hidden' : ''}>
-                      {user.name?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  </motion.div>
-                </Link>
-                <motion.button
+              <div className="relative" ref={dropdownRef}>
+                {/* Profile Icon */}
+                <motion.div
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg transition-shadow duration-300"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold cursor-pointer shadow-md hover:shadow-lg transition-shadow"
                 >
-                  <LogOut size={18} />
-                  Logout
-                </motion.button>
-              </>
+                  {user.profilePhoto ? (
+                    <img
+                      src={`${user.profilePhoto}`}
+                      alt={user.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <span className={user.profilePhoto ? 'hidden' : ''}>
+                    {user.name?.charAt(0).toUpperCase() || 'U'}
+                  </span>
+                </motion.div>
+
+                {/* Dropdown Menu */}
+                {dropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-100"
+                  >
+                    <button
+                      onClick={() => {
+                        navigate('/profile');
+                        setDropdownOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    >
+                      My Profile
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    >
+                      <LogOut size={16} /> Logout
+                    </button>
+                  </motion.div>
+                )}
+              </div>
             )}
           </div>
 
@@ -129,38 +158,24 @@ const Navbar = () => {
             </Link>
             {user && (
               <>
-                <Link
-                  to="/profile"
-                  onClick={() => setIsOpen(false)}
-                  className="block"
-                >
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">
-                    {user.profilePhoto ? (
-                        <img
-                          src={`${user.profilePhoto}`}
-                        alt={user.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <span className={user.profilePhoto ? 'hidden' : ''}>
-                      {user.name?.charAt(0).toUpperCase() || 'U'}
-                    </span>
-                  </div>
-                </Link>
                 <div className="pt-4 border-t">
+                  <button
+                    onClick={() => {
+                      navigate('/profile');
+                      setIsOpen(false);
+                    }}
+                    className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  >
+                    My Profile
+                  </button>
                   <button
                     onClick={() => {
                       handleLogout();
                       setIsOpen(false);
                     }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white w-full"
+                    className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
                   >
-                    <LogOut size={18} />
-                    Logout
+                    <LogOut size={16} /> Logout
                   </button>
                 </div>
               </>
