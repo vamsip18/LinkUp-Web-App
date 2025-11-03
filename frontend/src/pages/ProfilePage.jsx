@@ -227,12 +227,8 @@ const ProfilePage = () => {
       formData.append('image', file);
 
       const token = localStorage.getItem('token');
-<<<<<<< HEAD
       const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
       const apiUrl = process.env.REACT_APP_API_URL || `${backendUrl}/api`;
-=======
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
->>>>>>> 4be1bb599a9e888a9339c8325377cea5eecd19d7
       const response = await fetch(`${apiUrl}/user/profile/photo`, {
         method: 'POST',
         headers: {
