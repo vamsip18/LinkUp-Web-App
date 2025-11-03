@@ -116,7 +116,7 @@ const ProfilePage = () => {
 
       const token = localStorage.getItem('token');
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/posts/${editingPost._id}`, {
+      const response = await fetch(`${apiUrl}/api/posts/${editingPost._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -227,7 +227,7 @@ const ProfilePage = () => {
 
       const token = localStorage.getItem('token');
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/user/profile/photo`, {
+      const response = await fetch(`${apiUrl}/api/user/profile/photo`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -40,7 +40,7 @@ const FeedPage = () => {
 
       const token = localStorage.getItem('token');
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/posts`, {
+      const response = await fetch(`${apiUrl}/api/posts`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
