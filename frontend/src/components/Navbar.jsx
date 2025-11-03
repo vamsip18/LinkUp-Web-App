@@ -75,8 +75,8 @@ const Navbar = () => {
                     className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold cursor-pointer shadow-md hover:shadow-lg transition-shadow"
                   >
                     {user.profilePhoto ? (
-                      <img
-                        src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${user.profilePhoto}`}
+                        <img
+                          src={`${user.profilePhoto}`}
                         alt={user.name}
                         className="w-10 h-10 rounded-full object-cover"
                         onError={(e) => {
@@ -136,8 +136,8 @@ const Navbar = () => {
                 >
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">
                     {user.profilePhoto ? (
-                      <img
-                        src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${user.profilePhoto}`}
+                        <img
+                          src={`${user.profilePhoto}`}
                         alt={user.name}
                         className="w-10 h-10 rounded-full object-cover"
                         onError={(e) => {

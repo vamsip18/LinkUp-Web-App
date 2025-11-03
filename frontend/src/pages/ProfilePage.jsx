@@ -273,7 +273,7 @@ const ProfilePage = () => {
             <div className="relative">
               {user?.profilePhoto ? (
                 <img
-                  src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${user.profilePhoto}`}
+                  src={`${user.profilePhoto}`}
                   alt={user.name}
                   className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
                   onError={(e) => {

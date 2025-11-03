@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import Post from '../models/Post.js';
+import cloudinary from '../config/cloudinary.js';
 
 export const uploadProfilePhoto = async (req, res) => {
   try {
@@ -9,7 +10,21 @@ export const uploadProfilePhoto = async (req, res) => {
       return res.status(400).json({ message: 'No image file provided' });
     }
 
-    const imagePath = `/uploads/${req.file.filename}`;
+    // Upload to Cloudinary
+    const uploadRes = await cloudinary.uploader.upload_stream
+      ? await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { resource_type: 'image', folder: 'linkup/profile' },
+            (error, result) => {
+              if (error) return reject(error);
+              resolve(result);
+            }
+          );
+          stream.end(req.file.buffer);
+        })
+      : await cloudinary.uploader.upload(`data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`, { resource_type: 'image', folder: 'linkup/profile' });
+
+    const imagePath = uploadRes.secure_url;
     
     const user = await User.findByIdAndUpdate(
       userId,

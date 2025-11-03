@@ -108,7 +108,7 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
         <div className="flex items-center gap-3">
           {post.userProfilePhoto ? (
             <img
-              src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${post.userProfilePhoto}`}
+              src={`${post.userProfilePhoto}`}
               alt={post.username}
               className="w-10 h-10 rounded-full object-cover"
               onError={(e) => {
@@ -169,7 +169,7 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
                 >
                   {post.media[currentMediaIndex].type === 'video' ? (
                     <video
-                      src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${post.media[currentMediaIndex].path}`}
+                      src={`${post.media[currentMediaIndex].path}`}
                       controls
                       className="w-full h-auto object-cover max-h-96 rounded-xl"
                       onError={(e) => {
@@ -178,7 +178,7 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
                     />
                   ) : (
                     <img
-                      src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${post.media[currentMediaIndex].path}`}
+                      src={`${post.media[currentMediaIndex].path}`}
                       alt={`Post media ${currentMediaIndex + 1}`}
                       className="w-full h-auto object-cover max-h-96 rounded-xl"
                       onError={(e) => {
@@ -231,7 +231,7 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
                     >
                       {mediaItem.type === 'video' ? (
                         <video
-                          src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${mediaItem.path}`}
+                          src={`${mediaItem.path}`}
                           className="w-full h-20 object-cover rounded-xl"
                           onError={(e) => {
                             e.target.style.display = 'none';
@@ -239,7 +239,7 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
                         />
                       ) : (
                         <img
-                          src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${mediaItem.path}`}
+                          src={`${mediaItem.path}`}
                           alt={`Thumbnail ${index + 1}`}
                           className="w-full h-20 object-cover rounded-xl"
                           onError={(e) => {
@@ -268,7 +268,7 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
                   >
                     {mediaItem.type === 'video' ? (
                       <video
-                        src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${mediaItem.path}`}
+                        src={`${mediaItem.path}`}
                         controls
                         className="w-full h-auto object-cover max-h-96 rounded-xl"
                         onError={(e) => {
@@ -277,7 +277,7 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
                       />
                     ) : (
                       <img
-                        src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${mediaItem.path}`}
+                        src={`${mediaItem.path}`}
                         alt={`Post media ${index + 1}`}
                         className="w-full h-auto object-cover max-h-96 rounded-xl"
                         onError={(e) => {
@@ -297,7 +297,7 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
               className="rounded-xl overflow-hidden"
             >
               <img
-                src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${post.image}`}
+                src={`${post.image}`}
                 alt="Post"
                 className="w-full h-auto object-cover max-h-96 rounded-xl"
                 onError={(e) => {
@@ -323,7 +323,7 @@ const PostCard = ({ post, onLike, onComment, onEdit, onDelete, canEdit, showActi
                   >
                     {likedUser.profilePhoto ? (
                       <img
-                        src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${likedUser.profilePhoto}`}
+                        src={`${likedUser.profilePhoto}`}
                         alt={likedUser.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {

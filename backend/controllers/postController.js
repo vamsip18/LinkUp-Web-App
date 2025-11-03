@@ -1,5 +1,6 @@
 import Post from '../models/Post.js';
 import User from '../models/User.js';
+import cloudinary from '../config/cloudinary.js';
 
 export const getAllPosts = async (req, res) => {
   try {
@@ -51,26 +52,32 @@ export const createPost = async (req, res) => {
       return res.status(400).json({ message: 'Post content is required' });
     }
 
-    // Process multiple media files
+    // Process multiple media files via Cloudinary
     const media = [];
     if (req.files && req.files.length > 0) {
-      req.files.forEach((file) => {
+      for (const file of req.files) {
         const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
-        media.push({
-          type: mediaType,
-          path: `/uploads/${file.filename}`,
-        });
-      });
+        const uploadRes = await cloudinary.uploader.upload_stream
+          ? await new Promise((resolve, reject) => {
+              const stream = cloudinary.uploader.upload_stream(
+                { resource_type: 'auto', folder: 'linkup/posts' },
+                (error, result) => {
+                  if (error) return reject(error);
+                  resolve(result);
+                }
+              );
+              stream.end(file.buffer);
+            })
+          : await cloudinary.uploader.upload(`data:${file.mimetype};base64,${file.buffer.toString('base64')}`, { resource_type: 'auto', folder: 'linkup/posts' });
+        media.push({ type: mediaType, path: uploadRes.secure_url, publicId: uploadRes.public_id });
+      }
     }
 
-    // Keep backward compatibility with single image field
+    // Keep backward compatibility with single image field (use first image URL)
     let imagePath = null;
-    if (req.files && req.files.length > 0) {
-      // Use first image for backward compatibility
-      const firstImage = req.files.find(f => f.mimetype.startsWith('image/'));
-      if (firstImage) {
-        imagePath = `/uploads/${firstImage.filename}`;
-      }
+    const firstImage = media.find(m => m.type === 'image');
+    if (firstImage) {
+      imagePath = firstImage.path;
     }
 
     const post = await Post.create({
@@ -157,20 +164,39 @@ export const updatePost = async (req, res) => {
       media = [...post.media];
     }
 
-    // Remove deleted media
+    // Remove deleted media and delete from Cloudinary when possible
     if (deletedMedia && Array.isArray(deletedMedia)) {
+      const toDelete = post.media.filter(pm => deletedMedia.includes(pm.path));
+      for (const item of toDelete) {
+        if (item.publicId) {
+          try {
+            await cloudinary.uploader.destroy(item.publicId, { resource_type: item.type === 'video' ? 'video' : 'image' });
+          } catch (e) {
+            console.error('Cloudinary destroy error:', e.message);
+          }
+        }
+      }
       media = media.filter(item => !deletedMedia.includes(item.path));
     }
 
-    // Add new media files
+    // Add new media files via Cloudinary
     if (req.files && req.files.length > 0) {
-      req.files.forEach((file) => {
+      for (const file of req.files) {
         const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
-        media.push({
-          type: mediaType,
-          path: `/uploads/${file.filename}`,
-        });
-      });
+        const uploadRes = await cloudinary.uploader.upload_stream
+          ? await new Promise((resolve, reject) => {
+              const stream = cloudinary.uploader.upload_stream(
+                { resource_type: 'auto', folder: 'linkup/posts' },
+                (error, result) => {
+                  if (error) return reject(error);
+                  resolve(result);
+                }
+              );
+              stream.end(file.buffer);
+            })
+          : await cloudinary.uploader.upload(`data:${file.mimetype};base64,${file.buffer.toString('base64')}`, { resource_type: 'auto', folder: 'linkup/posts' });
+        media.push({ type: mediaType, path: uploadRes.secure_url, publicId: uploadRes.public_id });
+      }
     }
 
     post.media = media;
