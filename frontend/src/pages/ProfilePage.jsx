@@ -115,7 +115,7 @@ const ProfilePage = () => {
       }
 
       const token = localStorage.getItem('token');
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await fetch(`${apiUrl}/posts/${editingPost._id}`, {
         method: 'PUT',
         headers: {
@@ -226,7 +226,7 @@ const ProfilePage = () => {
       formData.append('image', file);
 
       const token = localStorage.getItem('token');
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await fetch(`${apiUrl}/user/profile/photo`, {
         method: 'POST',
         headers: {
