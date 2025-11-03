@@ -24,9 +24,9 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use('/auth', authRoutes);
-app.use('/posts', postRoutes);
-app.use('/user', userRoutes);
+app.use('api/auth', authRoutes);
+app.use('api/posts', postRoutes);
+app.use('api/user', userRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'LinkedIn Clone API is running' });
