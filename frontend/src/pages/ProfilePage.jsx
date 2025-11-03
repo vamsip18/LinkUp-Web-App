@@ -26,12 +26,12 @@ const ProfilePage = () => {
         setUser(userData);
 
         // Fetch updated user profile
-        const profileResponse = await api.get('/user/profile');
+        const profileResponse = await api.get('/api/user/profile');
         setUser(profileResponse.data);
         // Update localStorage with new profile data
         localStorage.setItem('user', JSON.stringify(profileResponse.data));
 
-        const response = await api.get('/posts/user');
+        const response = await api.get('/api/posts/user');
         setPosts(response.data);
       } catch (error) {
         toast.error('Failed to load profile');
@@ -144,7 +144,7 @@ const ProfilePage = () => {
 
   const handleDeletePost = async () => {
     try {
-      await api.delete(`/posts/${showDeleteConfirm._id}`);
+      await api.delete(`/api/posts/${showDeleteConfirm._id}`);
       setPosts(posts.filter((p) => p._id !== showDeleteConfirm._id));
       setShowDeleteConfirm(null);
       toast.success('Post deleted successfully!');
@@ -159,7 +159,7 @@ const ProfilePage = () => {
         toast.error('Post ID is missing');
         return;
       }
-      const response = await api.post(`/posts/${postId}/like`);
+      const response = await api.post(`/api/posts/${postId}/like`);
       setPosts(posts.map((p) => (p._id === postId ? response.data : p)));
     } catch (error) {
       console.error('Like error:', error);
@@ -177,7 +177,7 @@ const ProfilePage = () => {
         toast.error('Comment cannot be empty');
         return;
       }
-      const response = await api.post(`/posts/${postId}/comment`, { content });
+      const response = await api.post(`/api/posts/${postId}/comment`, { content });
       setPosts(posts.map((p) => (p._id === postId ? response.data : p)));
       toast.success('Comment added successfully!');
     } catch (error) {
@@ -194,7 +194,7 @@ const ProfilePage = () => {
     }
 
     try {
-      const response = await api.put('/user/profile/username', {
+      const response = await api.put('/api/user/profile/username', {
         name: editUsername.trim(),
       });
       setUser(response.data);
@@ -203,7 +203,7 @@ const ProfilePage = () => {
       setEditUsername('');
       
       // Reload posts to reflect username changes
-      const postsResponse = await api.get('/posts/user');
+      const postsResponse = await api.get('/api/posts/user');
       setPosts(postsResponse.data);
       
       toast.success('Username updated successfully!');

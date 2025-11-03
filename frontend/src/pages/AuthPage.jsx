@@ -29,7 +29,7 @@ const AuthPage = () => {
 
     try {
       const endpoint = isLogin ? '/auth/login' : '/auth/signup';
-      const response = await api.post(endpoint, formData);
+      const response = await api.post('/api'+endpoint, formData);
 
       if (response.data.token) {
         setAuthToken(response.data.token);

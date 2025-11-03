@@ -13,7 +13,7 @@ const FeedPage = () => {
 
   const fetchPosts = async () => {
     try {
-      const response = await api.get('/posts');
+      const response = await api.get('/api/posts');
       setPosts(response.data);
     } catch (error) {
       toast.error('Failed to load posts');
@@ -67,7 +67,7 @@ const FeedPage = () => {
         toast.error('Post ID is missing');
         return;
       }
-      const response = await api.post(`/posts/${postId}/like`);
+      const response = await api.post(`/api/posts/${postId}/like`);
       setPosts(posts.map((p) => (p._id === postId ? response.data : p)));
     } catch (error) {
       console.error('Like error:', error);
@@ -85,7 +85,7 @@ const FeedPage = () => {
         toast.error('Comment cannot be empty');
         return;
       }
-      const response = await api.post(`/posts/${postId}/comment`, { content });
+      const response = await api.post(`/api/posts/${postId}/comment`, { content });
       setPosts(posts.map((p) => (p._id === postId ? response.data : p)));
       toast.success('Comment added successfully!');
     } catch (error) {
