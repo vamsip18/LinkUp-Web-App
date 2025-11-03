@@ -39,7 +39,8 @@ const FeedPage = () => {
       }
 
       const token = localStorage.getItem('token');
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+      const apiUrl = process.env.REACT_APP_API_URL || `${backendUrl}/api`;
       const response = await fetch(`${apiUrl}/posts`, {
         method: 'POST',
         headers: {
